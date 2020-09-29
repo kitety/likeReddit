@@ -1,19 +1,31 @@
-import { Post } from "./entities/Post";
 import { MikroORM } from "@mikro-orm/core";
 import { __prod__ } from "./constants";
 import microConfig from "./mikro-orm.config";
+import express from "express"
+import { ApolloServer } from 'apollo-server-express'
+import { buildSchema } from 'type-graphql'
+import { HelloResolver } from "./resolvers/hello";
 
 const main = async () => {
   const orm = await MikroORM.init(microConfig);
   // run the migration before
   await orm.getMigrator().up();
-  // const post = orm.em.create(Post, { title: "title" });
-  // await orm.em.persistAndFlush(post);
-  /*  console.log("--------------------------------sql2");
-  await orm.em.nativeInsert(Post, { title: "title 2" }); */
+  const app = express()
 
-  // const post = await orm.em.find(Post, { title: "title" });
-  // console.log("post: ", post);
+  const apolloServer = new ApolloServer({
+    schema: await buildSchema({
+      resolvers: [HelloResolver],
+      validate: false
+    })
+  })
+  apolloServer.applyMiddleware({ app })
+  app.get('/', (_: any, res) => {
+    res.send('hello')
+  })
+  app.listen(4000, () => {
+    console.log(`server started on localhost:4000`);
+  })
+
 };
 console.log("hello");
 main().catch((e) => {
