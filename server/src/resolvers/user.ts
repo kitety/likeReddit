@@ -7,6 +7,7 @@ import {
   InputType,
   Mutation,
   ObjectType,
+  Query,
   Resolver,
 } from "type-graphql";
 import argon2 from "argon2";
@@ -35,10 +36,19 @@ class UserResponse {
 
 @Resolver()
 export class UserResolver {
+  @Query(() => User, { nullable: true })
+  async me(@Ctx() { em }: MyContext) {
+    if (!req.session!.userId) {
+      return null;
+    }
+    const user = await em.findOne(User, { id: req.session!.userId });
+
+    return user;
+  }
   @Mutation(() => UserResponse)
   async register(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const { username = "", password } = options;
     if (username.length <= 2) {
@@ -70,13 +80,15 @@ export class UserResolver {
         return { errors: [{ field: "username", message: "用户已经存在" }] };
       }
     }
+    // 注册的时候就保持登陆
+    req.session!.userId = user.id;
     return { user };
   }
 
   @Mutation(() => UserResponse)
   async login(
     @Arg("options") options: UsernamePasswordInput,
-    @Ctx() { em }: MyContext
+    @Ctx() { em, req }: MyContext
   ): Promise<UserResponse> {
     const { username, password } = options;
     const user = await em.findOne(User, { username });
@@ -91,6 +103,8 @@ export class UserResolver {
         errors: [{ field: "password", message: "incorrect password" }],
       };
     }
+    // 设置session
+    req.session!.userId = user.id;
     return { user };
   }
 }
