@@ -26,5 +26,6 @@ signedCookieCCCCCCCCCCCCCCCCCC ->sessionkeyxxxxxxx
 
 5.make a request to redis
 sessionkeyxxxxxxx -> {userId:1}
+req.session={userId:1}
 
 ```
